@@ -6,12 +6,15 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use App\Traits\JsonRespondController;
 
 class AuthController extends Controller
 {
+    use JsonRespondController;
+
     public function register(Request $request)
     {
-
+        //$validated = $this->validateRequest($request);
         $post_data = $request->validate([
             'name' => ['required', 'string'],
             'email' => ['required', 'string', 'email', 'unique:users'],
@@ -19,9 +22,9 @@ class AuthController extends Controller
         ]);
 
         $user = User::create([
-            'name' => $post_data['name'],
-            'email' => $post_data['email'],
-            'password' => Hash::make($post_data['password']),
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
         ]);
 
         $token = $user->createToken('authToken')->plainTextToken;
@@ -34,34 +37,20 @@ class AuthController extends Controller
 
     public function adminlogin(Request $request)
     {
-        $validated = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required|min:8',
-        ]);
-
+        $validated = $this->validateRequest($request);
         if (!Auth::attempt($request->only('email', 'password'))) {
-            return response()->json([
-                'message' => 'Wrong password and email combination',
-                'errors' => [
-                    'combination' => 'Wrong password and email combination',
-                ],
-            ], 401);
+            return $this->respondUnauthorized('Wrong password and email combination');
         }
 
         $user = User::where('email', $request['email'])->firstOrFail();
-        //if user is admin
+        //check if user is admin
         if (!$user->hasRole('admin')) {
-            return response()->json([
-                'message' => 'Wrong password and email combination',
-                'errors' => [
-                    'combination' => 'Wrong password and email combination',
-                ],
-            ], 401);
+            return $this->respondUnauthorized('Wrong password and email combination');
         }
 
         $token = $user->createToken('authToken')->plainTextToken;
 
-        return response()->json([
+        return $this->respond([
             'token' => $token,
             'user' => $user,
         ]);
@@ -104,5 +93,20 @@ class AuthController extends Controller
         Auth::user()->currentAccessToken()->delete();
 
         return response()->json(['message' => 'logged out']);
+    }
+
+    /**
+     * Validate the request
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse|true
+     */
+    private function validateRequest(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|min:8',
+        ]);
+
     }
 }
