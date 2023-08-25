@@ -12,4 +12,8 @@ class Product extends Model implements HasMedia
 {
     use HasFactory, InteractsWithMedia, ProductColumnFillable;
 
+    public function categories()
+    {
+        return $this->belongsToMany(Category::class);
+    }
 }

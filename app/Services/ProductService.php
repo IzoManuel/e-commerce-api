@@ -92,15 +92,9 @@ class ProductService
             'published'
         ))->toArray();
         
-        // $product = Product::create([
-        //     'name' => $data['name'],
-        //     'category_id' => $data['category_id'],
-        //     'user_id' => $data['user_id'],
-        //     'unit_price' => $data['unit_price'],
-        //     'slug' => $data['slug'],
-        //     'description' => $data['description']
-        // ]);
+
         $product = Product::create($data);
+        $product->categories()->attach($data['categories']);
         
         if ($images = $request->file('product_images')) {
             foreach ($images as $image) {
@@ -173,6 +167,7 @@ class ProductService
         ))->toArray();
         
         $product->update($data);
+        $product->categories()->sync($data['categories']);
         
         return $product;
     }

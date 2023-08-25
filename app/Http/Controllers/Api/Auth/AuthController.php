@@ -107,6 +107,6 @@ class AuthController extends Controller
             'email' => 'required|email',
             'password' => 'required|min:8',
         ]);
-
+        return $validated;
     }
 }

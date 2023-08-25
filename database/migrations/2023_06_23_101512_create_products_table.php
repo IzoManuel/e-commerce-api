@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('added_by')->default('admin');
             $table->foreignId('user_id');
-            $table->foreignId('category_id');
+            $table->foreignId('category_id')->nullable;
             $table->foreignID('brand_id')->nullable();
             $table->string('photos')->nullable();
             $table->string('thumbnail_img')->nullable();

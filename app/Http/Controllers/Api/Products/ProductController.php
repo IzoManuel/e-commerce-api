@@ -21,7 +21,6 @@ class ProductController extends Controller
     {
 
         $products = Product::latest()->paginate(12);
-        //$products = Product::latest('id')->get();
         return ProductResource::collection($products);
     }
 

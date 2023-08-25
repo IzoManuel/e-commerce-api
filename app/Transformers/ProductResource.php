@@ -26,12 +26,12 @@ class ProductResource extends JsonResource
             'slug' => $this->slug,
             'min_quantity' => $this->min_quantity,
             'current_stock' => $this->current_stock,
-            'category_id' => $this->category_id,
+            'categories' => $this->categories,
             'discount' => $this->discount,
             //'thumbnail_img' => $this->getMedia('products'),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
-            
+
         ];
     }
 }
