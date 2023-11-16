@@ -81,7 +81,7 @@ trait JsonRespondController
     {
         return $this->respond([
             'errors' => [
-                'message' => $message ?? config('api.error_codes' . $this->getErrorCode()),
+                'message' => $message ?? config('api.error_codes.'.$this->getErrorCode()),
                 'error_code' => $this->getErrorCode(),
             ],
         ]);
@@ -97,5 +97,61 @@ trait JsonRespondController
     public function respond($data, $headers = [])
     {
         return response()->json($data, $this->getHTTPStatusCode(), $headers);
+    }
+
+    /**
+     * Sends a aresponse of invalid query (http 500) to the request.
+     * Error code = 40
+     * 
+     * @param string $message
+     * @return JsonResponse
+     */
+    public function respondInvalidQuery($message = null)
+    {
+        return $this->setHttpStatusCode(500)
+                    ->setErrorCode(40)
+                    ->respondWithError($message);
+        
+    }
+
+    /**
+     * Sends error when the query didn't have the right parameters for creating an object
+     * Error code = 33
+     * 
+     * @param string $message
+     * @return JsonResponse
+     */
+    public function respondNotTheRightParameters($message = null)
+    {
+        return $this->setHttpStatusCode(500)
+                    ->etErrorCodes(33)
+                    ->respondWithError($message);
+    }
+
+    /**
+     * Sends a response not found (404) to the request
+     * Error code = 31
+     * 
+     * @return JsonResponse
+     */
+    public function respondNotFound()
+    {
+        return $this->setHttpStatusCode(404)
+                    ->setErrorCode(31)
+                    ->respondWithError();
+    }
+
+    /**
+     * Sends a response indicating the object has been deleted and id of deleted object
+     * 
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function respondObjectDeleted($id)
+    {
+        return $this->respond([
+                'deleted' => true,
+                'id' => $id
+        ]);
     }
 }

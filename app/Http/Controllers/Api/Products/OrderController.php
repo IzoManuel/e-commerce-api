@@ -8,6 +8,7 @@ use App\Models\OrderDetail;
 use App\Models\Product;
 use App\Traits\JsonRespondController;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Api\Payment\PayPalController;
 
 class OrderController extends Controller
 {
@@ -21,11 +22,12 @@ class OrderController extends Controller
         return $this->respond([
             'data' => $orders,
         ]);
-        // return OrderResource::collection($products);
+        // return OrderResource::collection($orders);
     }
 
     public function store(Request $request)
     {
+        
         $this->validateRequest($request);
         $cart = $request->cart;
 
@@ -50,7 +52,9 @@ class OrderController extends Controller
         $order->payment_status_viewed = '0';
         $order->code = date('Ymd-His') . rand(10, 99);
         $order->date = strtotime('now');
-
+        //Todo: fix payment
+        $order->save();
+        
         $subtotal = 0;
         $tax = 0;
         $shipping = 0;
@@ -62,9 +66,13 @@ class OrderController extends Controller
             $product = Product::find($cartItem['id']);
             if ($cartItem['quantity'] > $product->current_stock) {
                 $order->delete();
-                return $this->respondWithError([
+                return $this->setHTTPStatusCode(401)->respond([
                     'message' => 'The requested quantity is not available for ' . $product->name,
+                    'errors' => ['quantity' => 'The requested quantity is not available for ' . $product->name]
                 ]);
+                // return $this->setHTTPStatusCode(401)->respond([
+                    
+                // ]);
             } else {
                 $product->current_stock -= $cartItem['quantity'];
             }
@@ -87,10 +95,8 @@ class OrderController extends Controller
         $order->grand_total = $subtotal + $tax + $shipping;
 
         $order->save();
-        
-        return $this->respond([
-            'message' => $order,
-        ]);
+
+        return $order;
     }
 
     public function destroy($id)
@@ -108,11 +114,28 @@ class OrderController extends Controller
     {
         $customMessages = [
             'name.required' => 'The name field is required.',
+            'payment_method.required' => 'The Payment method is required'
         ];
+        
+        $rules = [];
+        $rules['email'] = 'required|email';
+        $rules['country'] = 'required';
+        $rules['city'] = 'required';
+        $rules['postal_code'] = 'required';
+        $rules['cart'] = 'required|Array';
+        $rules['payment_method'] = 'required';
+        // if ($request->payment_method == 'mpesa') {
+        //     $rules[phone]
+        // }
 
         $validated = $request->validate([
-            //'name' => 'required',
-            //'cart' => 'required'
+            'email' => 'required|email',
+            'country'=> 'required',
+            'city' => 'required',
+            'postal_code' => 'required',
+            'cart' => 'required|Array',
+            'payment_method' => 'required',
+            'phone_number' => 'required'
         ], $customMessages);
         return $validated;
     }

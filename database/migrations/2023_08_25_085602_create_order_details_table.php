@@ -18,6 +18,7 @@ return new class extends Migration
             $table->foreignId('seller_id')->nullable();
             $table->longText('variation')->nullable();
             $table->double('price', 8, 2)->nullable();
+            $table->string('paypal_order_id')->nullable();
             $table->double('tax', 8,2)->default(0.00);
             $table->double('shipping_cost',8, 2)->default(0.00);
             $table->integer('quantity')->nullable();

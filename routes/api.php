@@ -1,13 +1,15 @@
 <?php
 
-use App\Http\Controllers\Api\Auth\AuthController;
-use App\Http\Controllers\Api\Auth\RegisterController;
 use App\Http\Controllers\Api\Auth\LoginController;
+use App\Http\Controllers\Api\Auth\RegisterController;
 use App\Http\Controllers\Api\Categories\CategoryController;
-use App\Http\Controllers\Api\Products\ProductController;
-use App\Http\Controllers\Api\Products\OrderController;
-use App\Http\Controllers\Api\Products\CheckoutController;
 use App\Http\Controllers\Api\Customer\CustomerController;
+use App\Http\Controllers\Api\Payment\MpesaSTKPUSHController;
+use App\Http\Controllers\Api\Payment\PayPalController;
+use App\Http\Controllers\Api\Payment\StripeController;
+use App\Http\Controllers\Api\Products\CheckoutController;
+use App\Http\Controllers\Api\Products\OrderController;
+use App\Http\Controllers\Api\Products\ProductController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -34,6 +36,30 @@ Route::get('/products', [ProductController::class, 'index']);
 /**CATEGORY ROUTES */
 Route::get('/categories', [CategoryController::class, 'index']);
 
+/**CHECKOUT FOR GUEST */
+Route::post('/checkout', [CheckoutController::class, 'checkout']);
+
+/**PAYPAL */
+Route::controller(PayPalController::class)->prefix('paypal')->group(function () {
+    Route::get('/handle-payment', 'handlePayment')->name('make.payment');
+    Route::get('/cancel-payment', 'paymentCancel')->name('cancel.payment');
+    Route::get('/payment-success', 'paymentSuccess')->name('success.payment');
+    Route::post('/webhook', 'handleWebhook')->name('paypal.handleWebhook');
+});
+
+/**STRIPE */
+ROUTE::controller(StripeController::class)->prefix('stripe')->group(function () {
+    Route::post('/handle-payment', 'handlePayment')->name('stripe.payment');
+    Route::post('/webhook', 'handleWebhook')->name('stripe.handleWebhook');
+});
+
+
+/**MPESASTKPUSH */
+ROUTE::controller(MpesaSTKPUSHController::class)->group(function () {
+    Route::post('/mpesatest/stk/push', 'STKPush')->name('mpesa.push');
+    Route::post('/confirm', 'STKConfirm')->name('mpesa.confirm');
+});
+
 /**ADMIN ROUTES */
 Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
     //Products
@@ -43,6 +69,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
     Route::delete('/products/{id}', [ProductController::class, 'destroy']);
 
     //categories
+    //Route::apiResource('categories', CategoryController::class);
     Route::post('/categories', [CategoryController::class, 'store']);
     Route::get('/categories/{id}', [CategoryController::class, 'show']);
     Route::post('/categories/{id}', [CategoryController::class, 'update']);

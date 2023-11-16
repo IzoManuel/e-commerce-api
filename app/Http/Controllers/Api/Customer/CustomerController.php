@@ -9,19 +9,36 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use App\Transformers\UserResource;
+use Illuminate\Database\QueryException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class CustomerController extends Controller
 {
-
     use JsonRespondController;
 
+    /**
+     * Get the list of customers
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection | Illuminate\Http\JsonRsponse
+     */
     public function index(Request $request)
     {
-        $customers = User::role('customer')->latest()->paginate(12);
+        try {
+            $customers = User::role('customer')->latest()->paginate(12);
+        } catch (QueryException $e) {
+            return $this->respondInvalidQuery();
+        }
 
         return UserResource::collection($customers);
     }
 
+    /**
+     * Create a customer
+     * 
+     * @param Request $request
+     * @return CustomerResource | Illuminate\Http\JsonResponse
+     */
     public function store(Request $request)
     {
         $validated = $this->validateRequest($request);
@@ -43,35 +60,64 @@ class CustomerController extends Controller
         } catch (\Exception $e) {
             DB::rollback();
             return $this->respondWithError([
-                'message' => 'Failed to create customer'.$e,
+                'message' => 'Failed to create customer'
             ]);
         }
     }
 
-    public function update(Request $request, $id)
+    /**
+     * Update a customer
+     * 
+     * @param Request $request
+     * @param int $customerId
+     */
+    public function update(Request $request, $customerId)
     {
-        $customer = User::findOrFail($id);
-        
+        try {
+            $customer = User::findOrFail($customerId);
+        } catch (ModelNotFoundException $e) {
+            return $this->respondNotFound();
+        }
+
         $this->validateUpdateRequest($request);
-        
-        $customer->update([
-            'name' => $request->name
-        ]);
+
+        try {
+            $customer->update([
+                'name' => $request->name,
+                'random_field' => 'random_value'
+            ]);
+        } catch (QueryException $e) {
+            return $this->respondNotTheRightParameters();
+        }
 
         return new UserResource($customer);
     }
 
-    public function destroy($id)
+    /**
+     * Delete a customer
+     * 
+     * @param int $customerId
+     */
+    public function destroy($customerId)
     {
-        $customer = User::findOrFail($id);
+        try {
+            $customer = User::findOrFail($customerId);
+        } catch (ModelNotFoundException $e) {
+            return $this->respondNotFound();
+        }
+        
 
         $customer->delete();
 
-        return $this->respond([
-            'message' => 'Customer deleted'
-        ]);
+        return $this->respondObjectDeleted($customer->id);
     }
 
+    /**
+     * Validate the request for create
+     * 
+     * @param Request $request
+     * @return boolean true | Illuminate\Http\JsonResponse
+     */
     private function validateRequest(Request $request)
     {
         $validated = $request->validate([
@@ -82,6 +128,12 @@ class CustomerController extends Controller
         return $validated;
     }
 
+    /**
+     * Validate the request for update
+     * 
+     * @param Request @request
+     * @return boolean true | Illuminate\Http\JsonResponse
+     */
     public function validateUpdateRequest(Request $request)
     {
         $validated = $request->validate([
